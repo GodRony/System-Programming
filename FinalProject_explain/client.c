@@ -88,11 +88,13 @@ int main(int argc,char **argv){
         }else{
                 printf("connection success\n");
         }
+
+
         pthread_create(&rcv_thread,NULL,rcv,(void *)sock);
         // 새로운 스레드를 생성하는 함수
         // rcv_thread : 생성된 스레드의 ID를 저장할 변수, rcv는 스레드가 실행할 함수
         // rcv는 서버로부터 수신한 메세지를 처리하는 함수임!
-        // (void *) sock는 새로운 스레드 함수로 전달함. 이 값을 통해 소켓을 사용해 데이터 송수신 가능
+        // (void *) sock는 새로운 스레드 함수로 전달함. 이 값을 통해 소켓을 사용해 데이터 송수신 >가능
         char chat[100];
         char msg[1000];
         printf("while before\n");
@@ -114,3 +116,5 @@ int main(int argc,char **argv){
 
 
 }//end main
+
+
