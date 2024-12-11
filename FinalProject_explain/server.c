@@ -7,7 +7,8 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <pthread.h>
-
+#include <signal.h>
+#include <unistd.h>
 #define CLNT_MAX 10
 
 #define BUFFSIZE 200
@@ -15,6 +16,14 @@ int g_clnt_socks[CLNT_MAX];
 int g_clnt_count =0;
 
 pthread_mutex_t g_mutex;
+
+
+void sig_handler(int sig) {
+        printf("안돼!!! 서버를 닫지마 %d\n", sig);
+                // 모든 클라이언트 소켓 닫기
+
+}
+
 
 
 
@@ -99,15 +108,22 @@ int main(int argc, char **argv){
         struct sockaddr_in serv_addr; // 서버 주소 정보를 저장하는 구조체
 
 
+        ///// 시그널 ////
+              signal(SIGINT, sig_handler);
+              signal(SIGQUIT, sig_handler);
+              signal(SIGTSTP,sig_handler);
+              signal(SIGTERM, sig_handler);
+        /////////////////
+
 
         pthread_mutex_init(&g_mutex,NULL); // 뮤텍스 초기화
 
 
 
         serv_sock = socket(PF_INET,SOCK_STREAM,0);
-        // socket 함수로 소켓 생성 , PF_INENT : IPv4 주소 사용 , SOCK_STREAM : TCP 소켓 생성
+        // socket 함수로 소켓 생성 , PF_INENT : IPv4 주소 사용 , SOCK_STREAM : TCP 소켓 생성      
 
-        serv_addr.sin_family = AF_INET; // IPv4 주소 사용
+        serv_addr.sin_family = AF_INET; // IPv4 주소 사용                                         
         serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);// 모든 네트워크 인터페이스에서 접근 가능
         serv_addr.sin_port=htons(7989); // 포트 번호
         // 서버 주소 설정하는 부분
@@ -129,12 +145,22 @@ int main(int argc, char **argv){
         while(1){ // 클라이언트 연결 수락
                 clnt_addr_size=sizeof(clnt_addr);
                 clnt_sock = accept(serv_sock,(struct sockaddr *)&clnt_addr,&clnt_addr_size);
-                // accept : 클라이언트와 통신할 수 있는 새 소켓 반환 clnt_sock에 클라이언트 소켓 저장
-                pthread_mutex_lock(&g_mutex); // 뮤텍스 잠금 동기화
-                g_clnt_socks[g_clnt_count++] = clnt_sock; // 클라이언트 소켓을 리스트에 추가
-                pthread_mutex_unlock(&g_mutex); // 뮤텍스 잠금 해제
+                // accept : 클라이언트와 통신할 수 있는 새 소켓 반환 clnt_sock에 클라이언트 소켓 >저장
+
+
+
+                pthread_mutex_lock(&g_mutex);
+                // 뮤텍스 잠금 동기화
+                g_clnt_socks[g_clnt_count++] = clnt_sock;
+                // 클라이언트 소켓을 리스트에 추가
+                pthread_mutex_unlock(&g_mutex);
+                // 뮤텍스 잠금 해제
+
+
+
                 pthread_create(&t_thread,NULL,clnt_connection,(void *)clnt_sock);
                 // pthread_create : 새로운 스레드 생성
                 // clnt_connectioln 함수가 실행디고 해당 클라이언트와 통신을 담당함.
         }
+
 }
